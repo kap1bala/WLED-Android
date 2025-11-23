@@ -29,8 +29,11 @@ class WebsocketClient(device: Device) {
     private val client: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
+
+    private var isManuallyDisconnected = false
     private var isConnecting = false
     private var retryCount = 0
+
 
     // Moshi setup
     private val moshi: Moshi = Moshi.Builder().build()
@@ -99,6 +102,7 @@ class WebsocketClient(device: Device) {
             Log.w(TAG, "Already connected or connecting to ${deviceState.device.address}")
             return
         }
+        isManuallyDisconnected = false
         isConnecting = true
         val websocketUrl = "ws://${deviceState.device.address}/ws"
         val request = Request.Builder().url(websocketUrl).build()
@@ -106,8 +110,19 @@ class WebsocketClient(device: Device) {
         webSocket = client.newWebSocket(request, webSocketListener)
     }
 
+    fun disconnect() {
+        Log.d(TAG, "Manually disconnecting from ${deviceState.device.address}")
+        isManuallyDisconnected = true
+        webSocket?.close(NORMAL_CLOSURE_STATUS, "Client disconnected")
+        webSocket = null
+        // Ensure state is updated immediately
+        deviceState.isWebsocketConnected.value = false
+        isConnecting = false
+    }
+
+
     private fun reconnect() {
-        if (isConnecting) return
+        if (isManuallyDisconnected || isConnecting) return
 
         coroutineScope.launch {
             val delay = min(
@@ -141,7 +156,7 @@ class WebsocketClient(device: Device) {
 
 
     fun destroy() {
-        webSocket?.close(NORMAL_CLOSURE_STATUS, "Client destroyed")
-        webSocket = null
+        Log.d(TAG, "Websocket client is destroyed for ${deviceState.device.address}")
+        disconnect()
     }
 }

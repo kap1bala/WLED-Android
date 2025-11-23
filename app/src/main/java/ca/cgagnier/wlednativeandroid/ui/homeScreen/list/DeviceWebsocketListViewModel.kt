@@ -1,6 +1,8 @@
 package ca.cgagnier.wlednativeandroid.ui.homeScreen.list
 
 import android.util.Log
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ca.cgagnier.wlednativeandroid.model.wledapi.State
@@ -25,10 +27,14 @@ private const val TAG = "DeviceWebsocketListViewModel"
 class DeviceWebsocketListViewModel @Inject constructor(
     deviceRepository: DeviceRepository,
     userPreferencesRepository: UserPreferencesRepository
-) : ViewModel() {
+) : ViewModel(), DefaultLifecycleObserver {
     private val showHiddenDevices = userPreferencesRepository.showHiddenDevices
     private val activeClients = MutableStateFlow<Map<String, WebsocketClient>>(emptyMap())
     private val devicesFromDb = deviceRepository.allDevices
+
+    // Track if the ViewModel is paused or not. It would be paused if the app is in the
+    // background, for example.
+    private val isPaused = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -53,7 +59,9 @@ class DeviceWebsocketListViewModel @Inject constructor(
                             // Device added: create and connect a new client.
                             Log.d(TAG, "[Scan] Device added: $macAddress. Creating client.")
                             val newClient = WebsocketClient(device)
-                            newClient.connect()
+                            if (!isPaused.value) {
+                                newClient.connect()
+                            }
                             nextClients[macAddress] = newClient
                         } else if (existingClient.deviceState.device.address != device.address) {
                             // Device IP changed: reconnect the client.
@@ -63,7 +71,9 @@ class DeviceWebsocketListViewModel @Inject constructor(
                             )
                             existingClient.destroy()
                             val newClient = WebsocketClient(device)
-                            newClient.connect()
+                            if (!isPaused.value) {
+                                newClient.connect()
+                            }
                             nextClients[macAddress] = newClient
                         }
                     }
@@ -76,6 +86,28 @@ class DeviceWebsocketListViewModel @Inject constructor(
                 }
 
         }
+    }
+
+    /**
+     * Pauses all active WebSocket connections.
+     * Called when the app goes into the background.
+     */
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
+        Log.d(TAG, "onPause: App is in the background. Pausing all connections.")
+        isPaused.value = true
+        activeClients.value.values.forEach { it.disconnect() }
+    }
+
+    /**
+     * Resumes all active WebSocket connections.
+     * Called when the app comes into the foreground.
+     */
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
+        Log.d(TAG, "onResume: App is in the foreground. Resuming all connections.")
+        isPaused.value = false
+        activeClients.value.values.forEach { it.connect() }
     }
 
     // This is the unfiltered list of devices with their real-time state.
@@ -138,7 +170,10 @@ class DeviceWebsocketListViewModel @Inject constructor(
         viewModelScope.launch {
             val client = activeClients.value[device.device.macAddress]
             if (client == null) {
-                Log.w(TAG, "setBrightness: No active client found for MAC address ${device.device.macAddress}")
+                Log.w(
+                    TAG,
+                    "setBrightness: No active client found for MAC address ${device.device.macAddress}"
+                )
                 return@launch
             }
             Log.d(TAG, "Setting brightness for $device.device.macAddress to $brightness")
@@ -150,7 +185,10 @@ class DeviceWebsocketListViewModel @Inject constructor(
         viewModelScope.launch {
             val client = activeClients.value[device.device.macAddress]
             if (client == null) {
-                Log.w(TAG, "setDevicePower: No active client found for MAC address ${device.device.macAddress}")
+                Log.w(
+                    TAG,
+                    "setDevicePower: No active client found for MAC address ${device.device.macAddress}"
+                )
                 return@launch
             }
             Log.d(TAG, "Setting isOn for $device.device.macAddress to $isOn")

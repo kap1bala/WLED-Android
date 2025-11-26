@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
@@ -55,6 +57,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ca.cgagnier.wlednativeandroid.BuildConfig
 import ca.cgagnier.wlednativeandroid.R
 import ca.cgagnier.wlednativeandroid.model.StatefulDevice
 import ca.cgagnier.wlednativeandroid.service.websocket.DeviceWithState
@@ -255,73 +258,92 @@ private fun DrawerContent(
 ) {
     val uriHandler = LocalUriHandler.current
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.wled_logo_akemi),
-            contentDescription = stringResource(R.string.app_logo)
+    Column() {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.wled_logo_akemi),
+                contentDescription = stringResource(R.string.app_logo)
+            )
+        }
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.add_a_device)) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_a_device)
+                )
+            },
+            selected = false,
+            onClick = addDevice,
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
-    }
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.add_a_device)) },
-        icon = {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(R.string.add_a_device)
-            )
-        },
-        selected = false,
-        onClick = addDevice,
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    ToggleHiddenDeviceButton(showHiddenDevices, toggleShowHiddenDevices)
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.settings)) },
-        icon = {
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.settings)
-            )
-        },
-        selected = false,
-        onClick = openSettings,
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    HorizontalDivider(modifier = Modifier.padding(12.dp))
+        ToggleHiddenDeviceButton(showHiddenDevices, toggleShowHiddenDevices)
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.settings)) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.settings)
+                )
+            },
+            selected = false,
+            onClick = openSettings,
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        HorizontalDivider(modifier = Modifier.padding(12.dp))
 
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.help)) },
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_help_24),
-                contentDescription = stringResource(R.string.help)
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.help)) },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_help_24),
+                    contentDescription = stringResource(R.string.help)
+                )
+            },
+            selected = false,
+            onClick = {
+                uriHandler.openUri("https://kno.wled.ge/")
+            },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.support_me)) },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_coffee_24),
+                    contentDescription = stringResource(R.string.support_me)
+                )
+            },
+            selected = false,
+            onClick = {
+                uriHandler.openUri("https://github.com/sponsors/Moustachauve")
+            },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        Spacer(Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val debugString =
+                if (BuildConfig.BUILD_TYPE != "release") " - ${BuildConfig.BUILD_TYPE}" else ""
+            Text(
+                "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})${debugString}",
+                style = MaterialTheme.typography.bodyMedium
             )
-        },
-        selected = false,
-        onClick = {
-            uriHandler.openUri("https://kno.wled.ge/")
-        },
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.support_me)) },
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_coffee_24),
-                contentDescription = stringResource(R.string.support_me)
+            Text(
+                BuildConfig.APPLICATION_ID,
+                style = MaterialTheme.typography.bodySmall
             )
-        },
-        selected = false,
-        onClick = {
-            uriHandler.openUri("https://github.com/sponsors/Moustachauve")
-        },
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    // ...other drawer items
+        }
+    }
 }
 
 @Composable

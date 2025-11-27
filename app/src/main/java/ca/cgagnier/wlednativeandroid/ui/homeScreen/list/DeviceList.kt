@@ -28,6 +28,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,11 +62,30 @@ fun DeviceList(
     onOpenDrawer: () -> Unit,
     viewModel: DeviceWebsocketListViewModel = hiltViewModel(),
 ) {
-    val allDevices by viewModel.devicesWithState.collectAsStateWithLifecycle()
-    val onlineDevices by viewModel.onlineDevices.collectAsStateWithLifecycle()
-    val offlineDevices by viewModel.offlineDevices.collectAsStateWithLifecycle()
-    val shouldShowDevicesAreHidden by viewModel.shouldShowDevicesAreHidden.collectAsStateWithLifecycle()
+    val allDevices by viewModel.allDevicesWithState.collectAsStateWithLifecycle()
+    val showHiddenDevices by viewModel.showHiddenDevices.collectAsStateWithLifecycle()
     val showOfflineDevicesLast by viewModel.showOfflineDevicesLast.collectAsStateWithLifecycle()
+
+    val visibleDevices by remember(allDevices, showHiddenDevices) {
+        derivedStateOf {
+            allDevices
+                .filter { !it.device.isHidden || showHiddenDevices }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) {
+                    it.device.customName.ifBlank { it.device.originalName }
+                })
+        }
+    }
+
+    val onlineDevices by remember(allDevices) {
+        derivedStateOf {
+            allDevices.filter { it.isWebsocketConnected.value }
+        }
+    }
+    val offlineDevices by remember(allDevices) {
+        derivedStateOf {
+            allDevices.filter { !it.isWebsocketConnected.value }
+        }
+    }
 
     val pullToRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
@@ -113,7 +133,7 @@ fun DeviceList(
                     item {
                         NoDevicesItem(
                             modifier = Modifier.fillParentMaxSize(),
-                            shouldShowHiddenDevices = shouldShowDevicesAreHidden,
+                            shouldShowHiddenDevices = visibleDevices.isEmpty() && allDevices.isNotEmpty(),
                             onAddDevice = onAddDevice,
                             onShowHiddenDevices = onShowHiddenDevices
                         )
@@ -141,7 +161,7 @@ fun DeviceList(
                         )
                     } else {
                         allDevicesList(
-                            devices = allDevices,
+                            devices = visibleDevices,
                             selectedDevice = selectedDevice,
                             onItemClick = onItemClick,
                             onItemEdit = onItemEdit,

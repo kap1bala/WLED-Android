@@ -1,12 +1,10 @@
 package ca.cgagnier.wlednativeandroid.service
 
 import android.util.Log
-import androidx.lifecycle.ViewModel
 import ca.cgagnier.wlednativeandroid.model.Device
 import ca.cgagnier.wlednativeandroid.model.wledapi.Info
 import ca.cgagnier.wlednativeandroid.repository.DeviceRepository
 import ca.cgagnier.wlednativeandroid.service.api.DeviceApi
-import ca.cgagnier.wlednativeandroid.service.websocket.DeviceWithState
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -106,12 +104,13 @@ class DeviceFirstContactService @Inject constructor(
             Log.d(TAG, "No existing device found for MAC: ${info.macAddress}. Creating new entry.")
             return createDevice(info.macAddress, address, info.name)
         }
-        Log.d(TAG, "Device found for MAC: ${info.macAddress}")
         if (existingDevice.address == address && existingDevice.originalName == info.name) {
+            Log.d(TAG, "Device already exists for MAC and is unchanged: ${info.macAddress}")
             return existingDevice
         }
         Log.d(
-            TAG, "Updating address for device MAC: ${existingDevice.macAddress} to: $address"
+            TAG,
+            "Device already exists for MAC but is different: ${existingDevice.macAddress}"
         )
         return updateDeviceAddress(existingDevice, address, info.name)
     }

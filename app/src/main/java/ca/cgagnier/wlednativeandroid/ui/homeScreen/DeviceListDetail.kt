@@ -54,7 +54,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ca.cgagnier.wlednativeandroid.BuildConfig
 import ca.cgagnier.wlednativeandroid.R
+import ca.cgagnier.wlednativeandroid.service.websocket.AP_MODE_MAC_ADDRESS
 import ca.cgagnier.wlednativeandroid.service.websocket.DeviceWithState
+import ca.cgagnier.wlednativeandroid.service.websocket.getApModeDeviceWithState
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.detail.DeviceDetail
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.deviceAdd.DeviceAdd
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.deviceEdit.DeviceEdit
@@ -85,6 +87,9 @@ fun DeviceListDetail(
     val devices by deviceWebsocketListViewModel.allDevicesWithState.collectAsStateWithLifecycle()
     val selectedDeviceMacAddress = navigator.currentDestination?.contentKey as? String
     val selectedDevice = remember(devices, selectedDeviceMacAddress) {
+        if (selectedDeviceMacAddress == AP_MODE_MAC_ADDRESS) {
+            return@remember getApModeDeviceWithState()
+        }
         devices.firstOrNull { it.device.macAddress == selectedDeviceMacAddress }
     }
 

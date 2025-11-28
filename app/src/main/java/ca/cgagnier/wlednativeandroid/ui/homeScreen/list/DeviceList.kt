@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ca.cgagnier.wlednativeandroid.R
 import ca.cgagnier.wlednativeandroid.service.websocket.DeviceWithState
+import ca.cgagnier.wlednativeandroid.service.websocket.getApModeDeviceWithState
 import ca.cgagnier.wlednativeandroid.ui.theme.DeviceTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -67,8 +68,7 @@ fun DeviceList(
 
     val visibleDevices by remember(allDevices) {
         derivedStateOf {
-            allDevices
-                .filter { !it.device.isHidden || viewModel.showHiddenDevices.value }
+            allDevices.filter { !it.device.isHidden || viewModel.showHiddenDevices.value }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) {
                     it.device.customName.ifBlank { it.device.originalName }
                 })
@@ -139,17 +139,16 @@ fun DeviceList(
                         )
                     }
                 } else {
-                    // TODO: Add support back for captive portal
-                    //if (isWLEDCaptivePortal) {
-                    //    item {
-                    //        val device = StatefulDevice.getDefaultAPDevice()
-                    //        DeviceAPListItem(
-                    //            isSelected = device.address == selectedDevice?.address,
-                    //            onClick = { onItemClick(device) },
-                    //            modifier = Modifier.animateItem()
-                    //        )
-                    //    }
-                    //}
+                    if (isWLEDCaptivePortal) {
+                        item {
+                            val device = getApModeDeviceWithState()
+                            DeviceAPListItem(
+                                isSelected = device.device.macAddress == selectedDevice?.device?.macAddress,
+                                onClick = { onItemClick(device) },
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+                    }
                     if (showOfflineDevicesLast) {
                         onlineOfflineDevicesList(
                             onlineDevices = onlineDevices,
@@ -188,8 +187,7 @@ fun LazyListScope.allDevicesList(
     viewModel: DeviceWebsocketListViewModel
 ) {
     itemsIndexed(
-        devices,
-        key = { _, device -> device.device.macAddress }) { _, device ->
+        devices, key = { _, device -> device.device.macAddress }) { _, device ->
 
         DeviceRow(
             device = device,
@@ -210,8 +208,7 @@ fun LazyListScope.onlineOfflineDevicesList(
     viewModel: DeviceWebsocketListViewModel
 ) {
     itemsIndexed(
-        onlineDevices,
-        key = { _, device -> device.device.macAddress }) { _, device ->
+        onlineDevices, key = { _, device -> device.device.macAddress }) { _, device ->
 
         DeviceRow(
             device = device,
@@ -227,8 +224,7 @@ fun LazyListScope.onlineOfflineDevicesList(
             Text("Offline Devices")
         }
         itemsIndexed(
-            offlineDevices,
-            key = { _, device -> device.device.macAddress }) { _, device ->
+            offlineDevices, key = { _, device -> device.device.macAddress }) { _, device ->
 
             DeviceRow(
                 device = device,
@@ -285,19 +281,15 @@ fun LazyItemScope.DeviceRow(
     }
 
     if (isConfirmingDelete) {
-        ConfirmDeleteDialog(
-            device = device,
-            onConfirm = {
-                coroutineScope.launch {
-                    swipeDismissState.reset()
-                    isConfirmingDelete = false
-                    viewModel.deleteDevice(device.device)
-                }
-            },
-            onDismiss = {
+        ConfirmDeleteDialog(device = device, onConfirm = {
+            coroutineScope.launch {
+                swipeDismissState.reset()
                 isConfirmingDelete = false
+                viewModel.deleteDevice(device.device)
             }
-        )
+        }, onDismiss = {
+            isConfirmingDelete = false
+        })
     }
 }
 
@@ -307,31 +299,26 @@ fun DeviceListAppBar(
     onOpenDrawer: () -> Unit,
     onAddDevice: () -> Unit,
 ) {
-    CenterAlignedTopAppBar(
-        modifier = modifier,
-        title = {
-            Image(
-                painter = painterResource(id = R.drawable.wled_logo_akemi),
-                contentDescription = stringResource(R.string.app_logo)
+    CenterAlignedTopAppBar(modifier = modifier, title = {
+        Image(
+            painter = painterResource(id = R.drawable.wled_logo_akemi),
+            contentDescription = stringResource(R.string.app_logo)
+        )
+    }, navigationIcon = {
+        IconButton(onClick = onOpenDrawer) {
+            Icon(
+                imageVector = Icons.Filled.Menu,
+                contentDescription = stringResource(R.string.description_menu_button)
             )
-        },
-        navigationIcon = {
-            IconButton(onClick = onOpenDrawer) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = stringResource(R.string.description_menu_button)
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onAddDevice) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.add_a_device)
-                )
-            }
         }
-    )
+    }, actions = {
+        IconButton(onClick = onAddDevice) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(R.string.add_a_device)
+            )
+        }
+    })
 }
 
 @Composable
@@ -341,44 +328,34 @@ fun ConfirmDeleteDialog(
     onDismiss: () -> Unit,
 ) {
     device?.let {
-        AlertDialog(
-            title = {
-                Text(text = stringResource(R.string.deleting_device))
-            },
-            text = {
-                DeviceTheme(device) {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        DeviceInfoTwoRows(
-                            modifier = Modifier.padding(16.dp),
-                            device = device
-                        )
-                    }
-                }
-            },
-            onDismissRequest = {
-                onDismiss()
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onConfirm()
-                    }
-                ) {
-                    Text(
-                        stringResource(R.string.delete),
-                        color = MaterialTheme.colorScheme.error
+        AlertDialog(title = {
+            Text(text = stringResource(R.string.deleting_device))
+        }, text = {
+            DeviceTheme(device) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    DeviceInfoTwoRows(
+                        modifier = Modifier.padding(16.dp), device = device
                     )
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        onDismiss()
-                    }
-                ) {
-                    Text(stringResource(R.string.cancel))
-                }
             }
-        )
+        }, onDismissRequest = {
+            onDismiss()
+        }, confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm()
+                }) {
+                Text(
+                    stringResource(R.string.delete), color = MaterialTheme.colorScheme.error
+                )
+            }
+        }, dismissButton = {
+            TextButton(
+                onClick = {
+                    onDismiss()
+                }) {
+                Text(stringResource(R.string.cancel))
+            }
+        })
     }
 }

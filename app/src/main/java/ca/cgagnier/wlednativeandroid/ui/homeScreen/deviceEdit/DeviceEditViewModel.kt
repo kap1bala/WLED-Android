@@ -109,7 +109,11 @@ class DeviceEditViewModel @Inject constructor(
             _isCheckingUpdates.value = true
             val updatedDevice = device.copy(skipUpdateTag = "")
             repository.update(updatedDevice)
-            val releaseService = ReleaseService(versionWithAssetsRepository)
-            releaseService.refreshVersions(context.cacheDir)
+            try {
+                val releaseService = ReleaseService(versionWithAssetsRepository)
+                releaseService.refreshVersions(context.cacheDir)
+            } finally {
+                _isCheckingUpdates.value = false
+            }
         }
 }

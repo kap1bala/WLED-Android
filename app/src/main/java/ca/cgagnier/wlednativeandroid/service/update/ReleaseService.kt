@@ -42,13 +42,7 @@ object UpdateSourceRegistry {
     }
 }
 
-
-// Below that line, "old" "legacy" code from before the websocket refactoring
-// TODO: clean this up, either by moving it above this line or by removing it
-
 private const val TAG = "updateService"
-private const val WLED_BRAND = "WLED"
-private const val WLED_PRODUCT = "FOSS"
 
 class ReleaseService(private val versionWithAssetsRepository: VersionWithAssetsRepository) {
 

@@ -131,6 +131,8 @@ fun DeviceList(
                     .clip(shape = MaterialTheme.shapes.large),
             ) {
                 if (allDevices.isEmpty()) {
+                    // TODO: Find a way to improve the first load experience when opening the app.
+                    //  Seeing "no device" flash for a second when first opening the app isn't great
                     item {
                         NoDevicesItem(
                             modifier = Modifier.fillParentMaxSize(),

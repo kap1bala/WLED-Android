@@ -77,12 +77,12 @@ fun DeviceList(
 
     val onlineDevices by remember(visibleDevices) {
         derivedStateOf {
-            visibleDevices.filter { it.isWebsocketConnected.value }
+            visibleDevices.filter { it.isOnline }
         }
     }
     val offlineDevices by remember(visibleDevices) {
         derivedStateOf {
-            visibleDevices.filter { !it.isWebsocketConnected.value }
+            visibleDevices.filter { !it.isOnline }
         }
     }
 

@@ -65,7 +65,6 @@ fun DeviceListItem(
     onBrightnessChanged: (brightness: Int) -> Unit = {},
 ) {
     val stateInfo by device.stateInfo
-    val isOnline by device.isWebsocketConnected
 
     var checked by remember(stateInfo?.state?.isOn) {
         mutableStateOf(
@@ -229,7 +228,6 @@ fun DeviceInfoTwoRows(
     device: DeviceWithState,
     nameMaxLines: Int = 2,
 ) {
-    val isOnline by device.isWebsocketConnected
     val updateTag by device.updateVersionTagFlow.collectAsState(initial = null)
 
     Column(modifier = modifier) {
@@ -269,7 +267,7 @@ fun DeviceInfoTwoRows(
                         .height(20.dp)
                 )
             }
-            if (!isOnline) {
+            if (!device.isOnline) {
                 Text(
                     stringResource(R.string.is_offline),
                     style = MaterialTheme.typography.labelSmall,

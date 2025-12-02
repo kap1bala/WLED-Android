@@ -154,7 +154,7 @@ class DeviceWebsocketListViewModel @Inject constructor(
     fun refreshOfflineDevices() {
         Log.d(TAG, "Refreshing offline devices.")
         val offlineClients =
-            activeClients.value.values.filter { !it.deviceState.isWebsocketConnected.value }
+            activeClients.value.values.filter { !it.deviceState.isOnline }
         offlineClients.forEach {
             it.connect()
         }

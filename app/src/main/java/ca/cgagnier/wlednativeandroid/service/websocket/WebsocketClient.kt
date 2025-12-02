@@ -59,7 +59,7 @@ class WebsocketClient(
     private val webSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.d(TAG, "WebSocket connected for ${deviceState.device.address}")
-            deviceState.isWebsocketConnected.value = true
+            deviceState.websocketStatus.value = WebsocketStatus.CONNECTED
             retryCount = 0
             isConnecting = false
         }
@@ -104,7 +104,7 @@ class WebsocketClient(
                 TAG,
                 "WebSocket closing for ${deviceState.device.address}. Code: $code, Reason: $reason"
             )
-            deviceState.isWebsocketConnected.value = false
+            deviceState.websocketStatus.value = WebsocketStatus.DISCONNECTED
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
@@ -114,7 +114,7 @@ class WebsocketClient(
                 t
             )
             this@WebsocketClient.webSocket = null
-            deviceState.isWebsocketConnected.value = false
+            deviceState.websocketStatus.value = WebsocketStatus.DISCONNECTED
             isConnecting = false
             reconnect()
         }
@@ -135,6 +135,7 @@ class WebsocketClient(
         }
         isManuallyDisconnected = false
         isConnecting = true
+        deviceState.websocketStatus.value = WebsocketStatus.CONNECTING
         val websocketUrl = "ws://${deviceState.device.address}/ws"
         val request = Request.Builder().url(websocketUrl).build()
         Log.d(TAG, "Connecting to ${deviceState.device.address}")
@@ -147,7 +148,7 @@ class WebsocketClient(
         webSocket?.close(NORMAL_CLOSURE_STATUS, "Client disconnected")
         webSocket = null
         // Ensure state is updated immediately
-        deviceState.isWebsocketConnected.value = false
+        deviceState.websocketStatus.value = WebsocketStatus.DISCONNECTED
         isConnecting = false
     }
 
@@ -184,7 +185,7 @@ class WebsocketClient(
         // Trying to update the state when the device is offline should trigger a reconnection.
         // This is so that a user playing with the UI causes the device to reconnect if it
         // isn't trying to reconnect automatically for some reason.
-        if (!deviceState.isWebsocketConnected.value) {
+        if (deviceState.websocketStatus.value != WebsocketStatus.CONNECTED) {
             Log.w(TAG, "Not connected to ${deviceState.device.address}")
             connect()
         }

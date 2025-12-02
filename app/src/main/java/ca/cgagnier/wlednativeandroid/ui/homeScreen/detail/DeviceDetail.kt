@@ -135,7 +135,7 @@ fun DeviceDetailAppBar(
                     contentDescription = stringResource(R.string.refresh_page)
                 )
             }
-            if (!device.isAPMode()) {
+            if (!device.isAPMode) {
                 IconButton(onClick = editItem) {
                     Icon(
                         imageVector = Icons.Filled.Edit,

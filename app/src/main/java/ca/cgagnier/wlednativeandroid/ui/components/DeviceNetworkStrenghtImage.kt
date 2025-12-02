@@ -41,14 +41,13 @@ private fun getNetworkStrenghtImage(
 
 @Composable
 fun deviceNetworkStrengthImage(device: DeviceWithState) {
-    val isOnline by device.isWebsocketConnected
     val stateInfo by device.stateInfo
     val rssi = stateInfo?.info?.wifi?.rssi ?: -101
     TooltipBox(
         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
         tooltip = {
             PlainTooltip {
-                if (isOnline) {
+                if (device.isOnline) {
                     Text(stringResource(R.string.signal_strength, rssi))
                 } else {
                     Text(
@@ -66,7 +65,7 @@ fun deviceNetworkStrengthImage(device: DeviceWithState) {
             painter = painterResource(
                 getNetworkStrenghtImage(
                     rssi,
-                    isOnline
+                    device.isOnline
                 )
             ),
             contentDescription = stringResource(R.string.network_status),

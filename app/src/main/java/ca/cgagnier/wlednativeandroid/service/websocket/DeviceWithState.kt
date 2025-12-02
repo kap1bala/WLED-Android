@@ -17,15 +17,25 @@ class DeviceWithState(
 ) {
     var device: Device by mutableStateOf(initialDevice)
     val stateInfo: MutableState<DeviceStateInfo?> = mutableStateOf(null)
-    val isWebsocketConnected: MutableState<Boolean> = mutableStateOf(false)
-    // TODO: Add websocket connection status, like offline/online/connecting
+    val websocketStatus: MutableState<WebsocketStatus> =
+        mutableStateOf(WebsocketStatus.DISCONNECTED)
 
     val updateVersionTagFlow: Flow<String?> =
         deviceUpdateManager?.getUpdateFlow(this) ?: flowOf(null)
 
-    fun isAPMode(): Boolean {
-        return device.macAddress == AP_MODE_MAC_ADDRESS
-    }
+    val isOnline: Boolean
+        @JvmName("isOnline")
+        get() = websocketStatus.value == WebsocketStatus.CONNECTED
+
+    val isAPMode: Boolean
+        @JvmName("isAPMode")
+        get() = device.macAddress == AP_MODE_MAC_ADDRESS
+}
+
+enum class WebsocketStatus {
+    CONNECTED,
+    CONNECTING,
+    DISCONNECTED
 }
 
 /**
@@ -38,7 +48,7 @@ fun getApModeDeviceWithState(): DeviceWithState {
             address = "4.3.2.1",
         )
     )
-    device.isWebsocketConnected.value = true
+    device.websocketStatus.value = WebsocketStatus.CONNECTED
 
     return device
 }

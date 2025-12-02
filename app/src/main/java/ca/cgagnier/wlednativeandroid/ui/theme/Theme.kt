@@ -337,7 +337,6 @@ fun DeviceTheme(
     themeViewModel: ThemeViewModel = hiltViewModel(),
     content: @Composable () -> Unit
 ) {
-    val isOnline by device.isWebsocketConnected
     val stateInfo by device.stateInfo
 
     val theme by themeViewModel.theme.collectAsStateWithLifecycle()
@@ -350,7 +349,7 @@ fun DeviceTheme(
     DynamicMaterialTheme(
         seedColor = Color(getColorFromDeviceState(stateInfo)),
         isDark = darkTheme,
-        style = if (isOnline) PaletteStyle.Vibrant else PaletteStyle.Neutral,
+        style = if (device.isOnline) PaletteStyle.Vibrant else PaletteStyle.Neutral,
         animate = true
     ) {
         content()

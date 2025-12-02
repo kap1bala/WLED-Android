@@ -9,7 +9,6 @@ import androidx.room.RawQuery
 import androidx.room.Update
 import androidx.sqlite.db.SupportSQLiteQuery
 import ca.cgagnier.wlednativeandroid.model.Device
-import ca.cgagnier.wlednativeandroid.model.StatefulDevice
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -23,19 +22,19 @@ interface DeviceDao {
     @Delete
     suspend fun delete(device: Device)
 
-    @Query("DELETE FROM device2")
+    @Query("DELETE FROM Device2")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM device2 WHERE address = :address")
+    @Query("SELECT * FROM Device2 WHERE address = :address")
     suspend fun findDeviceByAddress(address: String): Device?
 
-    @Query("SELECT * FROM device2 WHERE address = :address")
+    @Query("SELECT * FROM Device2 WHERE address = :address")
     fun findLiveDeviceByAddress(address: String): Flow<Device?>
 
-    @Query("SELECT * FROM device2 WHERE macAddress != '' AND macAddress = :address")
+    @Query("SELECT * FROM Device2 WHERE macAddress != '' AND macAddress = :address")
     suspend fun findDeviceByMacAddress(address: String): Device?
 
-    @Query("SELECT COUNT() FROM device2 WHERE address = :address")
+    @Query("SELECT COUNT() FROM Device2 WHERE address = :address")
     fun count(address: String): Int
 
     @RawQuery
@@ -47,6 +46,6 @@ interface DeviceDao {
     @Query("SELECT * FROM Device2 ORDER BY LOWER(COALESCE(customName, originalName)) ASC, LOWER(address) ASC")
     fun getAlphabetizedDevices(): Flow<List<Device>>
 
-    @Query("SELECT COUNT() FROM device2 WHERE isHidden = 1")
+    @Query("SELECT COUNT() FROM Device2 WHERE isHidden = 1")
     suspend fun countHiddenDevices(): Int
 }

@@ -2,7 +2,6 @@ package ca.cgagnier.wlednativeandroid.repository
 
 import androidx.annotation.WorkerThread
 import ca.cgagnier.wlednativeandroid.model.Device
-import ca.cgagnier.wlednativeandroid.model.StatefulDevice
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

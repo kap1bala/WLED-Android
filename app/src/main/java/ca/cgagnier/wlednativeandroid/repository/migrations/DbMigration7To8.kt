@@ -29,12 +29,12 @@ class DbMigration7To8 : AutoMigrationSpec {
         Log.i(TAG, "Number of devices to be migrated: $devicesToMigrateCount")
 
 
-        // Copy data from Device (StatefulDevice) to device2 (Device)
+        // Copy data from legacy Device to Device2
         // We filter out devices with unknown MAC addresses because 'macAddress'
         // is the Primary Key in the new table and must be unique/valid
         db.execSQL(
             """
-            INSERT OR IGNORE INTO device2 (
+            INSERT OR IGNORE INTO Device2 (
                 macAddress, 
                 address, 
                 isHidden, 
@@ -59,13 +59,13 @@ class DbMigration7To8 : AutoMigrationSpec {
         )
 
         // Log the count of devices inserted into the new table
-        val insertedDevicesCursor = db.query("SELECT COUNT(*) FROM device2")
+        val insertedDevicesCursor = db.query("SELECT COUNT(*) FROM Device2")
         var insertedCount = 0
         if (insertedDevicesCursor.moveToFirst()) {
             insertedCount = insertedDevicesCursor.getInt(0)
         }
         insertedDevicesCursor.close()
-        Log.i(TAG, "Number of devices successfully inserted into 'device2': $insertedCount")
+        Log.i(TAG, "Number of devices successfully inserted into 'Device2': $insertedCount")
 
 
 

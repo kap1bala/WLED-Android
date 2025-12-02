@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import ca.cgagnier.wlednativeandroid.WebViewLiveData
 import ca.cgagnier.wlednativeandroid.model.Device
-import ca.cgagnier.wlednativeandroid.model.StatefulDevice
 
 class WebViewViewModel(context: Context) : ViewModel() {
     private val webView = WebViewLiveData(context)

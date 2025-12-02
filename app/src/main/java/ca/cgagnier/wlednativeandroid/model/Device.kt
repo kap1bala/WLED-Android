@@ -6,10 +6,13 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.parcelize.Parcelize
 
+const val AP_MODE_MAC_ADDRESS = "AP-MODE"
+const val DEFAULT_WLED_AP_IP = "4.3.2.1"
+
 /**
  * Represents a stateless WLED device
  */
-@Entity(tableName = "device2")
+@Entity(tableName = "Device2")
 @Parcelize
 data class Device(
     @PrimaryKey

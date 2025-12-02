@@ -12,6 +12,8 @@ import ca.cgagnier.wlednativeandroid.service.api.github.GithubApi
 import com.vdurmont.semver4j.Semver
 import java.io.File
 
+private const val TAG = "updateService"
+
 enum class UpdateSourceType {
     OFFICIAL_WLED, QUINLED, CUSTOM
 }
@@ -19,7 +21,6 @@ enum class UpdateSourceType {
 data class UpdateSourceDefinition(
     val type: UpdateSourceType,
     val brandPattern: String,
-    val productPattern: String,
     val githubOwner: String,
     val githubRepo: String
 )
@@ -27,22 +28,25 @@ data class UpdateSourceDefinition(
 object UpdateSourceRegistry {
     val sources = listOf(
         UpdateSourceDefinition(
-            UpdateSourceType.OFFICIAL_WLED, "WLED", "FOSS", "Aircoookie", "WLED"
+            type = UpdateSourceType.OFFICIAL_WLED,
+            brandPattern = "WLED",
+            githubOwner = "Aircoookie",
+            githubRepo = "WLED"
         ),
-        // TODO: Confirm these values for QUINLED
         UpdateSourceDefinition(
-            UpdateSourceType.QUINLED, "WLED", "QuinnLED", "QuinLED", "WLED-Quin"
+            type = UpdateSourceType.QUINLED,
+            brandPattern = "QuinLED",
+            githubOwner = "intermittech",
+            githubRepo = "QuinLED-Firmware"
         )
     )
 
     fun getSource(info: Info): UpdateSourceDefinition? {
         return sources.find {
-            info.brand == it.brandPattern && info.product?.contains(it.productPattern) == true
+            info.brand == it.brandPattern
         }
     }
 }
-
-private const val TAG = "updateService"
 
 class ReleaseService(private val versionWithAssetsRepository: VersionWithAssetsRepository) {
 
@@ -66,7 +70,7 @@ class ReleaseService(private val versionWithAssetsRepository: VersionWithAssetsR
             return null
         }
 
-        if (deviceInfo.brand != updateSourceDefinition.brandPattern || deviceInfo.product != updateSourceDefinition.productPattern) {
+        if (deviceInfo.brand != updateSourceDefinition.brandPattern) {
             return null
         }
 
@@ -95,7 +99,7 @@ class ReleaseService(private val versionWithAssetsRepository: VersionWithAssetsR
 
         val betaSuffixes = listOf("-a", "-b", "-rc")
         Log.w(
-            TAG, "Device ${deviceInfo.ipAddress}: ${deviceInfo.version} to ${untaggedUpdateVersion}"
+            TAG, "Device ${deviceInfo.ipAddress}: ${deviceInfo.version} to $untaggedUpdateVersion"
         )
         if (branch == Branch.STABLE && betaSuffixes.any {
                 deviceInfo.version.contains(

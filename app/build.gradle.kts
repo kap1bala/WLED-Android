@@ -58,6 +58,9 @@ android {
             freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
         }
     }
+    hilt {
+        enableAggregatingTask = true
+    }
     namespace = "ca.cgagnier.wlednativeandroid"
 }
 

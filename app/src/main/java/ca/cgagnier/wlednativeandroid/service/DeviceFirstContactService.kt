@@ -8,6 +8,7 @@ import ca.cgagnier.wlednativeandroid.service.api.DeviceApi
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -77,7 +78,7 @@ class DeviceFirstContactService @Inject constructor(
             .addConverterFactory(MoshiConverterFactory.create()).build()
             .create(DeviceApi::class.java)
 
-        return deviceApi.getInfo().body()!!
+        return deviceApi.getInfo().body() ?: throw IOException("Response body is null")
     }
 
     /**

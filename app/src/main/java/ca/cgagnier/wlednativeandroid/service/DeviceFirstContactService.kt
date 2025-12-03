@@ -4,12 +4,8 @@ import android.util.Log
 import ca.cgagnier.wlednativeandroid.model.Device
 import ca.cgagnier.wlednativeandroid.model.wledapi.Info
 import ca.cgagnier.wlednativeandroid.repository.DeviceRepository
-import ca.cgagnier.wlednativeandroid.service.api.DeviceApi
-import okhttp3.OkHttpClient
-import retrofit2.Retrofit
-import retrofit2.converter.moshi.MoshiConverterFactory
+import ca.cgagnier.wlednativeandroid.service.api.DeviceApiFactory
 import java.io.IOException
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 private const val TAG = "DeviceFirstContactService"
@@ -19,6 +15,7 @@ private const val TAG = "DeviceFirstContactService"
  */
 class DeviceFirstContactService @Inject constructor(
     private val repository: DeviceRepository,
+    private val deviceApiFactory: DeviceApiFactory
 ) {
     /**
      * Creates a new device record in the database.
@@ -63,22 +60,7 @@ class DeviceFirstContactService @Inject constructor(
      * @return The device information object.
      */
     private suspend fun getDeviceInfo(address: String): Info {
-        val timeout = 10L // seconds
-
-        // Normalize the address to ensure it's a valid base URL
-        val baseUrl = if (!address.startsWith("http://") && !address.startsWith("https://")) {
-            "http://$address/"
-        } else {
-            address
-        }
-
-        val okHttpClient = OkHttpClient().newBuilder().connectTimeout(timeout, TimeUnit.SECONDS)
-            .readTimeout(timeout, TimeUnit.SECONDS).writeTimeout(timeout, TimeUnit.SECONDS).build()
-        val deviceApi = Retrofit.Builder().baseUrl(baseUrl).client(okHttpClient)
-            .addConverterFactory(MoshiConverterFactory.create()).build()
-            .create(DeviceApi::class.java)
-
-        return deviceApi.getInfo().body() ?: throw IOException("Response body is null")
+        return deviceApiFactory.create(address).getInfo().body() ?: throw IOException("Response body is null")
     }
 
     /**

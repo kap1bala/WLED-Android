@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ca.cgagnier.wlednativeandroid.R
 import ca.cgagnier.wlednativeandroid.domain.use_case.ValidateAddress
-import ca.cgagnier.wlednativeandroid.repository.DeviceRepository
 import ca.cgagnier.wlednativeandroid.service.DeviceFirstContactService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +21,8 @@ private const val TAG = "DeviceAddViewModel"
 
 @HiltViewModel
 class DeviceAddViewModel @Inject constructor(
-    private val repository: DeviceRepository, private val validateAddress: ValidateAddress
+    private val validateAddress: ValidateAddress,
+    private val deviceFirstContactService: DeviceFirstContactService
 ) : ViewModel() {
 
     var state by mutableStateOf(DeviceAddState())
@@ -54,10 +54,8 @@ class DeviceAddViewModel @Inject constructor(
      */
     private suspend fun findDevice() {
         state = state.copy(step = DeviceAddStep.Adding)
-
-        val firstContactService = DeviceFirstContactService(repository)
         try {
-            val newDevice = firstContactService.fetchAndUpsertDevice(state.address)
+            val newDevice = deviceFirstContactService.fetchAndUpsertDevice(state.address)
             // If the dialog was closed before we got here, don't update the state
             if (!currentCoroutineContext().isActive) {
                 return

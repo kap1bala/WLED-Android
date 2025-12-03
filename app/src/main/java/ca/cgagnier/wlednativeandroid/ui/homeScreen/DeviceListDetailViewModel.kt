@@ -4,7 +4,6 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import ca.cgagnier.wlednativeandroid.repository.DeviceRepository
 import ca.cgagnier.wlednativeandroid.repository.UserPreferencesRepository
 import ca.cgagnier.wlednativeandroid.service.DeviceDiscovery
 import ca.cgagnier.wlednativeandroid.service.DeviceFirstContactService
@@ -25,11 +24,10 @@ private const val TAG = "DeviceListDetailViewModel"
 @HiltViewModel
 class DeviceListDetailViewModel @Inject constructor(
     application: Application,
-    repository: DeviceRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    networkManager: NetworkConnectivityManager
-): AndroidViewModel(application) {
-    val firstContactService = DeviceFirstContactService(repository)
+    networkManager: NetworkConnectivityManager,
+    private val deviceFirstContactService: DeviceFirstContactService,
+) : AndroidViewModel(application) {
     val isWLEDCaptivePortal = networkManager.isWLEDCaptivePortal
 
     val showHiddenDevices = preferencesRepository.showHiddenDevices
@@ -54,12 +52,13 @@ class DeviceListDetailViewModel @Inject constructor(
         discoveryService.start()
     }
 
-    fun startDiscoveryServiceTimed(timeMillis: Long = 10000) = viewModelScope.launch(Dispatchers.IO) {
-        Log.i(TAG, "Start device discovery")
-        startDiscoveryService()
-        delay(timeMillis)
-        stopDiscoveryService()
-    }
+    fun startDiscoveryServiceTimed(timeMillis: Long = 10000) =
+        viewModelScope.launch(Dispatchers.IO) {
+            Log.i(TAG, "Start device discovery")
+            startDiscoveryService()
+            delay(timeMillis)
+            stopDiscoveryService()
+        }
 
     fun stopDiscoveryService() {
         Log.i(TAG, "Stop device discovery")
@@ -68,7 +67,7 @@ class DeviceListDetailViewModel @Inject constructor(
 
     private fun deviceDiscovered(address: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            firstContactService.fetchAndUpsertDevice(address)
+            deviceFirstContactService.fetchAndUpsertDevice(address)
         }
     }
 
@@ -81,6 +80,7 @@ class DeviceListDetailViewModel @Inject constructor(
             true
         }
     }
+
     fun hideAddDeviceDialog() {
         _isAddDeviceDialogVisible.update {
             false

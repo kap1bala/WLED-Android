@@ -13,6 +13,7 @@ import ca.cgagnier.wlednativeandroid.repository.VersionDao
 import ca.cgagnier.wlednativeandroid.repository.VersionWithAssetsRepository
 import ca.cgagnier.wlednativeandroid.repository.migrations.UserPreferencesV0ToV1
 import ca.cgagnier.wlednativeandroid.service.NetworkConnectivityManager
+import ca.cgagnier.wlednativeandroid.service.api.DeviceApiFactory
 import ca.cgagnier.wlednativeandroid.service.update.ReleaseService
 import dagger.Module
 import dagger.Provides
@@ -22,9 +23,12 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 private const val DATA_STORE_FILE_NAME = "user_prefs.pb"
+private const val DEFAULT_TIMEOUT_SECONDS = 10L
 
 private val Context.userPreferencesStore: DataStore<UserPreferences> by dataStore(
     fileName = DATA_STORE_FILE_NAME,
@@ -102,5 +106,20 @@ object AppContainer {
         @ApplicationContext appContext: Context, coroutineScope: CoroutineScope
     ): NetworkConnectivityManager {
         return NetworkConnectivityManager(appContext, coroutineScope)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    fun provideDeviceApiFactory(okHttpClient: OkHttpClient): DeviceApiFactory {
+        return DeviceApiFactory(okHttpClient)
     }
 }

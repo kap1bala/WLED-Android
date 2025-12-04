@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -197,5 +198,6 @@ class WebsocketClient(
     fun destroy() {
         Log.d(TAG, "Websocket client is destroyed for ${deviceState.device.address}")
         disconnect()
+        coroutineScope.cancel()
     }
 }

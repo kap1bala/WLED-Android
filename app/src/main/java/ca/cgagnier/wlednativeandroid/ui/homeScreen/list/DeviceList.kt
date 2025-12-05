@@ -217,6 +217,7 @@ fun DeviceList(
                             onlineDevices = onlineDevices,
                             offlineDevices = offlineDevices,
                             selectedDevice = selectedDevice,
+                            currentTime = currentTime,
                             onItemClick = onItemClick,
                             onItemEdit = onItemEdit,
                             viewModel = viewModel
@@ -225,6 +226,7 @@ fun DeviceList(
                         allDevicesList(
                             devices = visibleDevices,
                             selectedDevice = selectedDevice,
+                            currentTime = currentTime,
                             onItemClick = onItemClick,
                             onItemEdit = onItemEdit,
                             viewModel = viewModel
@@ -257,6 +259,7 @@ fun DeviceList(
 fun LazyListScope.allDevicesList(
     devices: List<DeviceWithState>,
     selectedDevice: DeviceWithState?,
+    currentTime: Long,
     onItemClick: (DeviceWithState) -> Unit,
     onItemEdit: (DeviceWithState) -> Unit,
     viewModel: DeviceWebsocketListViewModel
@@ -267,6 +270,7 @@ fun LazyListScope.allDevicesList(
         DeviceRow(
             device = device,
             isSelected = device.device.macAddress == selectedDevice?.device?.macAddress,
+            currentTime = currentTime,
             onClick = onItemClick,
             onEdit = onItemEdit,
             viewModel = viewModel
@@ -278,6 +282,7 @@ fun LazyListScope.onlineOfflineDevicesList(
     onlineDevices: List<DeviceWithState>,
     offlineDevices: List<DeviceWithState>,
     selectedDevice: DeviceWithState?,
+    currentTime: Long,
     onItemClick: (DeviceWithState) -> Unit,
     onItemEdit: (DeviceWithState) -> Unit,
     viewModel: DeviceWebsocketListViewModel
@@ -288,6 +293,7 @@ fun LazyListScope.onlineOfflineDevicesList(
         DeviceRow(
             device = device,
             isSelected = device.device.macAddress == selectedDevice?.device?.macAddress,
+            currentTime = currentTime,
             onClick = onItemClick,
             onEdit = onItemEdit,
             viewModel = viewModel
@@ -303,6 +309,7 @@ fun LazyListScope.onlineOfflineDevicesList(
             DeviceRow(
                 device = device,
                 isSelected = device.device.macAddress == selectedDevice?.device?.macAddress,
+                currentTime = currentTime,
                 onClick = onItemClick,
                 onEdit = onItemEdit,
                 viewModel = viewModel
@@ -315,6 +322,7 @@ fun LazyListScope.onlineOfflineDevicesList(
 fun LazyItemScope.DeviceRow(
     device: DeviceWithState,
     isSelected: Boolean,
+    currentTime: Long = 0,
     onClick: (DeviceWithState) -> Unit,
     onEdit: (DeviceWithState) -> Unit,
     viewModel: DeviceWebsocketListViewModel
@@ -328,6 +336,7 @@ fun LazyItemScope.DeviceRow(
     DeviceListItem(
         device = device,
         isSelected = isSelected,
+        currentTime = currentTime,
         onClick = { onClick(device) },
         swipeToDismissBoxState = swipeDismissState,
         onDismiss = { direction ->

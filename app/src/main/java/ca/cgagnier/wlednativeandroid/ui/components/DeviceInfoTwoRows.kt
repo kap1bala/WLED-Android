@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -77,6 +76,8 @@ import java.util.concurrent.TimeUnit
 fun DeviceInfoTwoRows(
     modifier: Modifier = Modifier,
     device: DeviceWithState,
+    // Used to update the lastSeen message frequently, leave 0 for no updates
+    currentTime: Long = 0,
     nameMaxLines: Int = 2,
 ) {
     val updateTag by device.updateVersionTagFlow.collectAsState(initial = null)
@@ -116,7 +117,7 @@ fun DeviceInfoTwoRows(
             }
             if (!device.isOnline) {
                 OfflineSinceText(
-                    device.device, modifier = Modifier.padding(start = 4.dp)
+                    device.device, currentTime, modifier = Modifier.padding(start = 4.dp)
                 )
             }
             if (device.device.isHidden) {
@@ -251,8 +252,12 @@ fun WebsocketStatusShape(websocketState: WebsocketStatus) {
 }
 
 @Composable
-fun OfflineSinceText(device: Device, modifier: Modifier = Modifier) {
-    if (device.lastSeen <= 0) {
+fun OfflineSinceText(
+    device: Device,
+    // Used to update the lastSeen message frequently, leave 0 for no updates
+    currentTime: Long = 0, modifier: Modifier = Modifier
+) {
+    if (device.lastSeen <= 0 || currentTime <= 0) {
         Text(
             "(${stringResource(R.string.is_offline)})",
             style = MaterialTheme.typography.labelSmall,
@@ -262,14 +267,6 @@ fun OfflineSinceText(device: Device, modifier: Modifier = Modifier) {
         return
     }
 
-    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    // Update the current time every minute to refresh the "offline since" text
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(60000L) // 1 minute
-            currentTime = System.currentTimeMillis()
-        }
-    }
     val diffMillis = currentTime - device.lastSeen
     val minutes = TimeUnit.MILLISECONDS.toMinutes(diffMillis)
     val hours = TimeUnit.MILLISECONDS.toHours(diffMillis)

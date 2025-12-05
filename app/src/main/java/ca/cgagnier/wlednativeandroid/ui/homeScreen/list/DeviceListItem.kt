@@ -66,6 +66,8 @@ fun DeviceListItem(
     modifier: Modifier = Modifier,
     device: DeviceWithState,
     isSelected: Boolean = false,
+    // Used to update the lastSeen message frequently, leave 0 for no updates
+    currentTime: Long = 0,
     onClick: () -> Unit = {},
     swipeToDismissBoxState: SwipeToDismissBoxState,
     onDismiss: (SwipeToDismissBoxValue) -> Unit,
@@ -106,7 +108,9 @@ fun DeviceListItem(
                         modifier = Modifier, verticalAlignment = Alignment.CenterVertically
                     ) {
                         DeviceInfoTwoRows(
-                            device = device, modifier = Modifier.weight(1f)
+                            device = device,
+                            currentTime = currentTime,
+                            modifier = Modifier.weight(1f)
                         )
                         Switch(
                             modifier = Modifier.padding(start = 10.dp),

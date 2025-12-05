@@ -3,6 +3,9 @@
     <string name="app_logo">WLED Logo</string>
     <string name="add_a_device">Add a New Device</string>
     <string name="add">Add</string>
+    <string name="add_adding_device">Adding <xliff:g example="192.168.1.1" id="strength">%1$s</xliff:g></string>
+    <string name="add_device_added"><xliff:g example="Device123" id="strength">%1$s</xliff:g> was added</string>
+    <string name="add_device_error">Could not connect to the device. Verify the address.</string>
     <string name="deleting_device">Delete Device?</string>
     <string name="delete">Delete</string>
     <string name="ip_address_or_url">IP Address or URL</string>
@@ -12,7 +15,20 @@
     <string name="please_enter_valid_value">Please enter a valid value</string>
     <string name="cancel">Cancel</string>
     <string name="default_device_name">(New Device)</string>
-    <string name="is_offline">(Offline)</string>
+    <string name="is_offline">Offline</string>
+    <string name="offline_less_than_minute">Offline, less than a minute ago</string>
+    <plurals name="offline_minutes">
+        <item quantity="one">Offline, %d minute ago</item>
+        <item quantity="other">Offline, %d minutes ago</item>
+    </plurals>
+    <plurals name="offline_hours">
+        <item quantity="one">Offline, %d hour ago</item>
+        <item quantity="other">Offline, %d hours ago</item>
+    </plurals>
+    <plurals name="offline_days">
+        <item quantity="one">Offline, %d day ago</item>
+        <item quantity="other">Offline, %d days ago</item>
+    </plurals>
     <string name="update_available">Update Available</string>
     <string name="network_status">Network Status</string>
     <string name="signal_strength">Signal strength: <xliff:g example="-62" id="strength">%1$s</xliff:g></string>
@@ -68,6 +84,7 @@
     <string name="show_error">Show Error</string>
     <string name="hide_error">Hide Error</string>
     <string name="unknown_error">Unknown Error</string>
+    <string name="success">Success!</string>
     <string name="update_channel">Update Channel</string>
     <string name="stable">Stable</string>
     <string name="beta">Beta</string>
@@ -77,4 +94,8 @@
     <string name="downloading_file">Downloading File</string>
     <string name="help">WLED Help</string>
     <string name="support_me">Support Moustachauve</string>
+    <string name="offline_devices">Offline Devices</string>
+    <string name="websocket_connected">Connected</string>
+    <string name="websocket_connecting">Connecting…</string>
+    <string name="websocket_disconnected">Disconnected</string>
 </resources>

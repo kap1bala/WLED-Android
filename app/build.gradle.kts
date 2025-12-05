@@ -19,8 +19,8 @@ android {
         applicationId = "ca.cgagnier.wlednativeandroid"
         minSdk = 24
         targetSdk = 36
-        versionCode = 41
-        versionName = "5.1.0"
+        versionCode  = 44
+        versionName = "6.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -30,8 +30,9 @@ android {
     }
 
     buildFeatures {
-        dataBinding = true
+        buildConfig = true
         compose = true
+        dataBinding = true
     }
 
     buildTypes {
@@ -57,6 +58,9 @@ android {
             freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
         }
     }
+    hilt {
+        enableAggregatingTask = true
+    }
     namespace = "ca.cgagnier.wlednativeandroid"
 }
 
@@ -66,6 +70,9 @@ ksp {
 }
 
 dependencies {
+    implementation(libs.androidx.graphics.shapes)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.geometry)
     val composeBom = platform(libs.androidx.compose.bom)
     androidTestImplementation(composeBom)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,7 +95,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.preference.ktx)
-    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.runtime.livedata)

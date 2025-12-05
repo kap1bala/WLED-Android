@@ -1,16 +1,18 @@
 package ca.cgagnier.wlednativeandroid.ui.homeScreen
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
@@ -20,13 +22,11 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
@@ -38,10 +38,9 @@ import androidx.compose.material3.adaptive.navigation.BackNavigationBehavior
 import androidx.compose.material3.adaptive.navigation.NavigableListDetailPaneScaffold
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,16 +49,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import ca.cgagnier.wlednativeandroid.BuildConfig
 import ca.cgagnier.wlednativeandroid.R
-import ca.cgagnier.wlednativeandroid.model.Device
+import ca.cgagnier.wlednativeandroid.model.AP_MODE_MAC_ADDRESS
+import ca.cgagnier.wlednativeandroid.service.websocket.DeviceWithState
+import ca.cgagnier.wlednativeandroid.service.websocket.getApModeDeviceWithState
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.detail.DeviceDetail
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.deviceAdd.DeviceAdd
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.deviceEdit.DeviceEdit
 import ca.cgagnier.wlednativeandroid.ui.homeScreen.list.DeviceList
+import ca.cgagnier.wlednativeandroid.ui.homeScreen.list.DeviceWebsocketListViewModel
 import kotlinx.coroutines.launch
 
 private const val TAG = "screen_DeviceListDetail"
@@ -70,6 +71,7 @@ fun DeviceListDetail(
     modifier: Modifier = Modifier,
     openSettings: () -> Unit,
     viewModel: DeviceListDetailViewModel = hiltViewModel(),
+    deviceWebsocketListViewModel: DeviceWebsocketListViewModel = hiltViewModel(),
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
@@ -81,53 +83,35 @@ fun DeviceListDetail(
         rememberListDetailPaneScaffoldNavigator<Any>(scaffoldDirective = customScaffoldDirective)
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
-    val selectedDeviceAddress = navigator.currentDestination?.contentKey as? String ?: ""
-    val selectedDevice =
-        viewModel.getDeviceByAddress(selectedDeviceAddress).collectAsStateWithLifecycle(null)
+    val devices by deviceWebsocketListViewModel.allDevicesWithState.collectAsStateWithLifecycle()
+    val selectedDeviceMacAddress = navigator.currentDestination?.contentKey as? String
+    val selectedDevice = remember(devices, selectedDeviceMacAddress) {
+        if (selectedDeviceMacAddress == AP_MODE_MAC_ADDRESS) {
+            return@remember getApModeDeviceWithState()
+        }
+        devices.firstOrNull { it.device.macAddress == selectedDeviceMacAddress }
+    }
 
     val showHiddenDevices by viewModel.showHiddenDevices.collectAsStateWithLifecycle()
     val isWLEDCaptivePortal by viewModel.isWLEDCaptivePortal.collectAsStateWithLifecycle()
-    val isAddDeviceBottomSheetVisible by viewModel.isAddDeviceBottomSheetVisible.collectAsStateWithLifecycle()
+    val isAddDeviceDialogVisible by viewModel.isAddDeviceDialogVisible.collectAsStateWithLifecycle()
     val addDevice = {
-        viewModel.showAddDeviceBottomSheet()
-    }
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-
-    DisposableEffect(key1 = lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                Log.i(TAG, "== ON RESUME ==")
-                viewModel.startDiscoveryServiceTimed()
-                viewModel.startRefreshDevicesLoop()
-            }
-            if (event == Lifecycle.Event.ON_PAUSE) {
-                Log.i(TAG, "== ON PAUSE ==")
-                viewModel.stopRefreshDevicesLoop()
-                viewModel.stopDiscoveryService()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        viewModel.showAddDeviceDialog()
     }
 
-    val navigateToDeviceDetail: (Device) -> Unit = { device: Device ->
+    val navigateToDeviceDetail: (DeviceWithState) -> Unit = { device: DeviceWithState ->
         coroutineScope.launch {
             navigator.navigateTo(
                 pane = ListDetailPaneScaffoldRole.Detail,
-                contentKey = device.address
+                contentKey = device.device.macAddress
             )
         }
     }
-    val navigateToDeviceEdit = { device: Device ->
+    val navigateToDeviceEdit = { device: DeviceWithState ->
         coroutineScope.launch {
             navigator.navigateTo(
                 pane = ListDetailPaneScaffoldRole.Extra,
-                contentKey = device.address
+                contentKey = device.device.macAddress
             )
         }
     }
@@ -173,7 +157,7 @@ fun DeviceListDetail(
                 listPane = {
                     AnimatedPane {
                         DeviceList(
-                            selectedDevice.value,
+                            selectedDevice,
                             isWLEDCaptivePortal = isWLEDCaptivePortal,
                             onItemClick = navigateToDeviceDetail,
                             onAddDevice = addDevice,
@@ -181,7 +165,6 @@ fun DeviceListDetail(
                                 viewModel.toggleShowHiddenDevices()
                             },
                             onRefresh = {
-                                viewModel.refreshDevices(silent = false)
                                 viewModel.startDiscoveryServiceTimed()
                             },
                             onItemEdit = {
@@ -197,7 +180,8 @@ fun DeviceListDetail(
                     }
                 }, detailPane = {
                     AnimatedPane {
-                        selectedDevice.value?.let { device ->
+                        SelectDeviceView()
+                        selectedDevice?.let { device ->
                             DeviceDetail(
                                 device = device,
                                 onItemEdit = {
@@ -214,7 +198,7 @@ fun DeviceListDetail(
                     }
                 }, extraPane = {
                     AnimatedPane {
-                        selectedDevice.value?.let { device ->
+                        selectedDevice?.let { device ->
                             DeviceEdit(
                                 device = device,
                                 canNavigateBack = navigator.canNavigateBack(),
@@ -233,10 +217,12 @@ fun DeviceListDetail(
     }
 
 
-    if (isAddDeviceBottomSheetVisible) {
-        AddDeviceBottomSheet(sheetState, onDismissRequest = {
-            viewModel.hideAddDeviceBottomSheet()
-        })
+    if (isAddDeviceDialogVisible) {
+        DeviceAdd(
+            onDismissRequest = {
+                viewModel.hideAddDeviceDialog()
+            }
+        )
     }
 }
 
@@ -248,74 +234,96 @@ private fun DrawerContent(
     openSettings: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
+    val scrollState = rememberScrollState()
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.Center
+    Column(
+        modifier = Modifier.verticalScroll(scrollState)
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.wled_logo_akemi),
-            contentDescription = stringResource(R.string.app_logo)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.wled_logo_akemi),
+                contentDescription = stringResource(R.string.app_logo)
+            )
+        }
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.add_a_device)) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_a_device)
+                )
+            },
+            selected = false,
+            onClick = addDevice,
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
-    }
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.add_a_device)) },
-        icon = {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = stringResource(R.string.add_a_device)
-            )
-        },
-        selected = false,
-        onClick = addDevice,
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    ToggleHiddenDeviceButton(showHiddenDevices, toggleShowHiddenDevices)
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.settings)) },
-        icon = {
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = stringResource(R.string.settings)
-            )
-        },
-        selected = false,
-        onClick = openSettings,
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    HorizontalDivider(modifier = Modifier.padding(12.dp))
+        ToggleHiddenDeviceButton(showHiddenDevices, toggleShowHiddenDevices)
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.settings)) },
+            icon = {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.settings)
+                )
+            },
+            selected = false,
+            onClick = openSettings,
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        HorizontalDivider(modifier = Modifier.padding(12.dp))
 
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.help)) },
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_help_24),
-                contentDescription = stringResource(R.string.help)
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.help)) },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_help_24),
+                    contentDescription = stringResource(R.string.help)
+                )
+            },
+            selected = false,
+            onClick = {
+                uriHandler.openUri("https://kno.wled.ge/")
+            },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        NavigationDrawerItem(
+            label = { Text(text = stringResource(R.string.support_me)) },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.baseline_coffee_24),
+                    contentDescription = stringResource(R.string.support_me)
+                )
+            },
+            selected = false,
+            onClick = {
+                uriHandler.openUri("https://github.com/sponsors/Moustachauve")
+            },
+            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+        )
+        Spacer(Modifier.height(24.dp))
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val debugString =
+                if (BuildConfig.BUILD_TYPE != "release") " - ${BuildConfig.BUILD_TYPE}" else ""
+            Text(
+                "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})${debugString}",
+                style = MaterialTheme.typography.bodyMedium
             )
-        },
-        selected = false,
-        onClick = {
-            uriHandler.openUri("https://kno.wled.ge/")
-        },
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    NavigationDrawerItem(
-        label = { Text(text = stringResource(R.string.support_me)) },
-        icon = {
-            Icon(
-                painter = painterResource(id = R.drawable.baseline_coffee_24),
-                contentDescription = stringResource(R.string.support_me)
+            Text(
+                BuildConfig.APPLICATION_ID,
+                style = MaterialTheme.typography.bodySmall
             )
-        },
-        selected = false,
-        onClick = {
-            uriHandler.openUri("https://github.com/sponsors/Moustachauve")
-        },
-        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
-    )
-    // ...other drawer items
+        }
+    }
 }
 
 @Composable
@@ -365,29 +373,5 @@ fun SelectDeviceView() {
             )
             Text(stringResource(R.string.select_a_device_from_the_list))
         }
-    }
-}
-
-@Composable
-private fun AddDeviceBottomSheet(
-    sheetState: SheetState,
-    onDismissRequest: () -> Unit,
-) {
-    val coroutineScope = rememberCoroutineScope()
-    ModalBottomSheet(
-        modifier = Modifier.fillMaxHeight(),
-        sheetState = sheetState,
-        onDismissRequest = onDismissRequest,
-    ) {
-        DeviceAdd(
-            sheetState = sheetState,
-            deviceAdded = {
-                coroutineScope.launch { sheetState.hide() }.invokeOnCompletion {
-                    if (!sheetState.isVisible) {
-                        onDismissRequest()
-                    }
-                }
-            },
-        )
     }
 }
